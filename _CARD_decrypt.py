@@ -7,7 +7,8 @@ import zlib
 
 file_name = sys.argv[1]
 
-#1. definitions
+#0. Definitions
+
 def FileCheck(filename):
 	try:
 		open(filename, 'r')
@@ -75,17 +76,20 @@ def GetCryptoKey(filename):
 		m_iCryptoKey = FindCryptoKey(filename)	
 	return m_iCryptoKey
 
-# 2. Get crypto key
+# 1. Get crypto key
+
 print('Getting crypto key...')
 m_iCryptoKey = GetCryptoKey(file_name)
 
-# 3. Read data from file into byte array
+# 2. Read data from file into byte array
+
 print('Reading file "' + file_name + '"...')
 with open(file_name, "rb") as f:
 	data = bytearray(f.read())
 print('Done.')
 
-# 4. Decrypt
+# 3. Decrypt
+
 print('Decrypting...')
 for i in range(len(data)):
 	v = i + m_iCryptoKey + 0x23D
@@ -94,7 +98,8 @@ for i in range(len(data)):
 	data[i] ^= v & 0xFF
 print('Done.')
 
-# 5. Write decrypted data to file
+# 4. Write decrypted data to file
+
 print('Writing to file "' + file_name + '.dec"...')
 with open(file_name + ".dec", "wb") as f:
 	f.write(zlib.decompress(data))
