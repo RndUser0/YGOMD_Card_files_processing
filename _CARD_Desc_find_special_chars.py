@@ -31,7 +31,7 @@ for i in range(len(CARD_Desc_list)):
 
 Special_char_list = sorted(list(set(Special_char_list)))
 
-with open('Special_chars.txt', 'wt', encoding="utf8") as f:
+with open('!Special_chars.txt', 'wt', encoding="utf8") as f:
 	for i in range(len(Special_char_list)):			
 		f.write(Special_char_list[i] + '\n')
 f.close()
