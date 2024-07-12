@@ -35,12 +35,9 @@
 * Encrypts all 3 files
 * The original files will be overwritten by this, so make a backup beforehand.
 
-### _find_crypto_key.py
-* Brute-forces the crypto key using the file "CARD_Indx" from the same directory
-* Writes the found key to the file "!CryptoKey.txt"
-
-## Link
-* [Modding guide with more info on the Card_* files on NexusMods](https://www.nexusmods.com/yugiohmasterduel/articles/3)
+## Links
+* [My modding guide with more info on the Card_* files on NexusMods](https://www.nexusmods.com/yugiohmasterduel/articles/3)
+* [My Improve Card Text Readibility mod](https://github.com/RndUser0/YGOMD-Improve_Card_Text_Readibility)
  
 ## Credits
 * [akintos](https://gist.github.com/akintos) for [the original decryption script](https://gist.github.com/akintos/04e2494c62184d2d4384078b0511673b)
