@@ -39,6 +39,9 @@
 * Brute-forces the crypto key using the file "CARD_Indx" from the same directory
 * Writes the found key to the file "!CryptoKey.txt"
 
+## Link
+* [Modding guide with more info on the Card_* files on NexusMods](https://www.nexusmods.com/yugiohmasterduel/articles/3)
+ 
 ## Credits
 * [akintos](https://gist.github.com/akintos) for [the original decryption script](https://gist.github.com/akintos/04e2494c62184d2d4384078b0511673b)
 * [crazydoomy](https://github.com/crazydoomy) for [the original encryption script](https://discord.com/channels/747402959117353022/938180052984659979/959192997667422228)
