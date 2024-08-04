@@ -13,7 +13,7 @@
 
 ### _CARD_Prop_decrypt_and_split_IDs.py
 * Decrypts the CARD_Prop file in the same folder
-* Extracts all Card IDs from it
+* Extracts all card IDs from it
 * Saves them to the original file name plus the extension ".Card_IDs.dec.json"
 
 ### _CARD_decrypt.py
