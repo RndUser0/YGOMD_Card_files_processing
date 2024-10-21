@@ -40,7 +40,7 @@
 
 ## Links
 * [My modding guide with more info on the Card_* files on NexusMods](https://www.nexusmods.com/yugiohmasterduel/articles/3)
-* [My Improve Card Text Readibility mod](https://github.com/RndUser0/YGOMD-Improve_Card_Text_Readibility)
+* [My Improved Card Text Readibility mod (discontinued)](https://github.com/RndUser0/YGOMD-Improve_Card_Text_Readibility)
  
 ## Credits
 * [akintos](https://gist.github.com/akintos) for [the original decryption script](https://gist.github.com/akintos/04e2494c62184d2d4384078b0511673b)
