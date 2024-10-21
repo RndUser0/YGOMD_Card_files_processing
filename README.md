@@ -16,6 +16,9 @@
 * Extracts all card IDs from it
 * Saves them to the original file name plus the extension ".Card_IDs.dec.json"
 
+### _CARD_Prop_IDs_json_to_txt.py
+* Converts the card IDs JSON file to a text file
+
 ### _CARD_decrypt.py
 * Decrypts the file specified in the parameter
 * You can drag'n'drop an encrypted file on this script in Windows Explorer or use the command line for that, for example "_CARD_decrypt.py CARD_Desc.bytes"
