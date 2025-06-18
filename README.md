@@ -38,6 +38,10 @@
 * Encrypts all 3 files
 * The original files will be overwritten by this, so make a backup beforehand.
 
+### get_latest_CARD_Name+Prop_text_files.py
+* Gets the latest decrypted CARD_Name and Card_Prop text files directly from the game directory.
+* Required app: AssetStudioModCLI from [here](https://github.com/aelurum/AssetStudio/releases/latest) in directory ".\Tools\AssetStudioModCLI_aelurum" (.exe file has to be there).
+
 ## Links
 * [My modding guide with more info on the Card_* files on NexusMods](https://www.nexusmods.com/yugiohmasterduel/articles/3)
 * [My Improved Card Text Readibility mod (discontinued)](https://github.com/RndUser0/YGOMD-Improve_Card_Text_Readibility)
