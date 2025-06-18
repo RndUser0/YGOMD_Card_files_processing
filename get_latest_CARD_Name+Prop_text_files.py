@@ -351,16 +351,20 @@ Del_all_files_in_dir(game_files_dir)
 # A4. Scan game files
 #Check if AssetStudioModCLI app exists
 AssetStudio_path = '.\\Tools\\AssetStudioModCLI_aelurum\\AssetStudioModCLI.exe'
+script_dir = Path(__file__).parent / ''
 
 if FileCheck(AssetStudio_path) == 0:
-	print('AssetStudioModCLI app not found in path"' + AssetStudio_path +'".\nPress <ENTER> to exit.')
+	print('AssetStudioModCLI app not found in path"' + AssetStudio_path +'".')
+	MkDir('Tools')
+	os.chdir('.\\Tools')
+	MkDir('AssetStudioModCLI_aelurum')	
+	print('Please copy the app files to "' + str(script_dir)  + '\\Tools\\AssetStudioModCLI_aelurum\\". \nPress <ENTER> to exit.')
 	input()
 	sys.exit()
 
 print('Scanning game files for CARD-related ones...')
 
 Path_list = Sort_by_last_modified_rev(BaseDir)
-script_dir = Path(__file__).parent / ''
 
 i = 0
 while i < len(Path_list) and not All_CARD_files_exist(game_files_dir):
