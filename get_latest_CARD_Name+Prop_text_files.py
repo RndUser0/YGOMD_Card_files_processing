@@ -19,12 +19,22 @@ import zlib
 # 0. Definitions
 
 def FileCheck(file_path):
-	if os.path.isfile(file_path):
-		print(f'The file "{file_path}" exists and is a regular file.')
-		return 1
-	else:
+	if not os.path.isfile(file_path):
 		print(f'The file "{file_path}" does not exist or is not a regular file.')
 		return 0
+	else:
+		try:
+			dummy = os.path.getsize(file_path)
+			if dummy > 0:
+				#print('File size:', dummy)
+				return dummy
+			else:
+				print(f'The file "{file_path}" exists, but it doesn\'t contain anything.')
+				return 0
+		except OSError:
+			print(f'The file "{file_path}" caused an OS error.')
+			# Handle cases where the file might be inaccessible or other OS errors
+			return 0
 
 def DirCheck(directory_path):
 	if os.path.isdir(directory_path):
@@ -45,51 +55,72 @@ def AddBackslash(directory_path):
 		directory_path = directory_path + '\\'
 	return directory_path
 
-def Get_LD_BaseDir():
-	if FileCheck(settings_dir + '!LocalData dir.txt') == 1:
-		print('Trying to read LocalData directory path from file...')
-		with open(settings_dir + '!LocalData dir.txt', 'r', encoding='utf-8') as f_LD_BaseDir:
-				LD_BaseDir = f_LD_BaseDir.read()
-		f_LD_BaseDir.close()	
-		print('Read directory "' + LD_BaseDir + '" from file, checking if it is correct...')
-	
-		if (DirCheck(LD_BaseDir) and LocalDataDirCheck(LD_BaseDir)):
-			#Add backslash at the end if it doesn't exist.
-			LD_BaseDir = AddBackslash(LD_BaseDir)
-			print('"' + LD_BaseDir + '" will be used as Master Duel LocalData directory.')
-			return LD_BaseDir
+def Get_LD_BaseDirInfoList(min_LD_dirs_file_size):
+	FileCheck_result = FileCheck(settings_dir + '!LocalData dirs.txt')
+	read_errors = 0
+	if FileCheck_result >= min_LD_dirs_file_size:
+		LD_BaseDirInfoList=[]		
+		print('Trying to read LocalData directory paths from file...')
+		with open(settings_dir + '!LocalData dirs.txt', 'r', encoding='utf-8') as f_LD_BaseDirInfoList:
+			i = 0 #Line counter
+			for line in f_LD_BaseDirInfoList:
+				LD_BaseDirInfoList.append(line.strip('\n')) #Apppend line and remove line break				
+				if (i % 2 == 0) and (DirCheck(LD_BaseDirInfoList[i])) and (LocalDataDirCheck(LD_BaseDirInfoList[i])):					
+					LD_BaseDirInfoList[i] = (AddBackslash(LD_BaseDirInfoList[i])) #Add backslash at the end if it doesn't exist.
+					print('"' + LD_BaseDirInfoList[i] + '" will be used as a Master Duel LocalData directory.')					
+				elif (i % 2 != 0):
+					print('"' + LD_BaseDirInfoList[i] + '" will be used as language for that Master Duel LocalData directory.')					
+				else:
+					read_errors += 1
+					if not DirCheck(LD_BaseDirInfoList[i]):
+						print("Directory doesn't exist.")		
+					if not LocalDataDirCheck(LD_BaseDirInfoList[i]):
+						print('"' + LD_BaseDirInfoList[i] + '" is not a Master Duel LocalData Directory.')					
+				i += 1 # Line counter +1
+		f_LD_BaseDirInfoList.close()			
+		if read_errors == 0:
+			print('Directories from file will be used.')
+			return LD_BaseDirInfoList
 		else:
-			if not DirCheck(LD_BaseDir):
-				print("Directory doesn't exist.")		
-			if not LocalDataDirCheck(LD_BaseDir):
-				print('"' + LD_BaseDir + '" is not a Master Duel LocalData Directory.')	
-			return ''
-		
-	else:		
-		LD_BaseDir = ''
-		print('Enter the path of your account-specific Master Duel LocalData directory. \nExample: C:\\Program Files (x86)\\Steam\\steamapps\\common\\Yu-Gi-Oh!  Master Duel\\LocalData\\1a2b3c4d')
-
-		#Get directory and check it.
-		while not (DirCheck(LD_BaseDir) and  LocalDataDirCheck(LD_BaseDir)):
-			print('Path:', end=' ')
-			LD_BaseDir = input()
-			if not DirCheck(LD_BaseDir):
-				print("Directory doesn't exist.")
-			if DirCheck(LD_BaseDir) and not LocalDataDirCheck(LD_BaseDir):
-				print('"' + LD_BaseDir + '" is not a Master Duel LocalData Directory.')
-
-		#Add backslash at the end if it doesn't exist.
-		LD_BaseDir = AddBackslash(LD_BaseDir)
-		
-		print('"' + LD_BaseDir + '" will be used as Master Duel LocalData directory.')
-		
-		#Write LD_BaseDir to file
-		with open(settings_dir + '!LocalData dir.txt', 'w', encoding='utf-8') as f_LD_BaseDir:
-			f_LD_BaseDir.write(LD_BaseDir)
-		f_LD_BaseDir.close()
-		print('Wrote "' + LD_BaseDir + '" to file "' + settings_dir + '!LocalData dir.txt".')	
+			print('Directories from file will not be used because there were read errors.')
+	else:
+		print('Content from the file "' + settings_dir + '!LocalData dirs.txt" cannot be used.')
 	
-		return LD_BaseDir
+	if (FileCheck_result  <= min_LD_dirs_file_size) or (read_errors > 0):
+		#Enter directories in command prompt:
+		LD_BaseDirInfoList = []
+		print('How many account-specific Master Duel LocalData directories would you like to enter?\nAmount:', end=' ')		
+		amount = int(input())		
+		for i in range(amount * 2):
+			if (i % 2 == 0):
+				LD_BaseDirInfoList.append('')				
+				print('Enter the path of an account-specific Master Duel LocalData directory. \nExample: C:\\Program Files (x86)\\Steam\\steamapps\\common\\Yu-Gi-Oh!  Master Duel\\LocalData\\1a2b3c4d')
+
+				#Get directory and check it.
+				while not (DirCheck(LD_BaseDirInfoList[i]) and  LocalDataDirCheck(LD_BaseDirInfoList[i])):
+					print('Path:', end=' ')
+					LD_BaseDirInfoList[i] = input()
+					if not DirCheck(LD_BaseDirInfoList[i]):
+						print("Directory doesn't exist.")
+					if DirCheck(LD_BaseDirInfoList[i]) and not LocalDataDirCheck(LD_BaseDirInfoList[i]):
+						print('"' + LD_BaseDirInfoList[i] + '" is not a Master Duel LocalData Directory.')
+
+				#Add backslash at the end if it doesn't exist.
+				LD_BaseDirInfoList[i] = AddBackslash(LD_BaseDirInfoList[i])
+				
+				print('"' + LD_BaseDirInfoList[i] + '" will be used as a Master Duel LocalData directory.')
+			else:
+				LD_BaseDirInfoList.append('')				
+				print('Enter the set game language of that Master Duel account.\nExample: English\nLanguage:', end=' ')				
+				LD_BaseDirInfoList[i] = input()
+		
+		#Write LD_BaseDirInfoList to file
+		with open(settings_dir + '!LocalData dirs.txt', 'w', encoding='utf-8') as f_LD_BaseDirInfoList:
+			for i in range(int(len(LD_BaseDirInfoList[i]) / 2)):
+				f_LD_BaseDirInfoList.write(LD_BaseDirInfoList[i] + '\n')
+		f_LD_BaseDirInfoList.close()
+		print('Wrote directories and languages to file "' + settings_dir + '!LocalData dirs.txt".')		
+		return LD_BaseDirInfoList
 
 def MkDir(FolderName):	
 	try:
@@ -103,13 +134,21 @@ def MkDir(FolderName):
 		print(f'An error occurred: {e}')
 	return AddBackslash(os.path.abspath(FolderName))
 
-def Del_all_files_in_dir(Directory):
-	print('Deleting all files in directory "' + Directory + '"...')
-	for filename in os.listdir(Directory):
-		file_path = os.path.join(Directory, filename)
-		if os.path.isfile(file_path):
-			os.remove(file_path)		
-	print('All files in directory "' + Directory + '" have been deleted.')
+def Del_everything_in_dir(Directory):
+	errors = 0
+	print('Deleting everything in directory "' + Directory + '"...')
+	for Filename in os.listdir(Directory):
+		file_path = os.path.join(Directory, Filename)
+		try:
+			if os.path.isfile(file_path) or os.path.islink(file_path):
+				os.unlink(file_path)
+			elif os.path.isdir(file_path):
+				shutil.rmtree(file_path)			
+		except Exception as e:
+			errors += 1
+			print('Failed to delete %s. Reason: %s' % (file_path, e))
+	if errors == 0:
+		print('Everything in directory "' + Directory + '" has been deleted.')
 
 def MoveFile(SourceFile, Destination):
 	try:
@@ -209,7 +248,7 @@ def FindCryptoKey(filename):
 	return m_iCryptoKey
 
 def GetCryptoKey(filename):
-	if FileCheck(settings_dir + '!CryptoKey.txt') == 1:
+	if FileCheck(settings_dir + '!CryptoKey.txt') == CryptoKey_file_size:
 		print('Trying to read crypto key from file...')
 		with open(settings_dir + '!CryptoKey.txt', 'rt') as f_CryptoKey:		
 				m_iCryptoKey = int(f_CryptoKey.read(),16)			
@@ -232,33 +271,33 @@ def Check_files(Filename_list):
 		Filename = Filename_list[i]
 		
 		if Filename.find('.') == -1: #if no dot found in filename			
-			if FileCheck(Filename) == 1:
+			if FileCheck(Filename) > 0:
 				Checked_filename_list.append(Filename)
-			elif FileCheck(Filename + '.bytes') == 1				:
+			elif FileCheck(Filename + '.bytes') > 0				:
 				Checked_filename_list.append(Filename + '.bytes')
-			elif FileCheck(Filename + '.txt') == 1:
+			elif FileCheck(Filename + '.txt') > 0:
 				Checked_filename_list.append(Filename + '.txt')			
 		
 		if Filename.find('.dec') ==  len(Filename) - 4: #if ".dec" found at the end of filename
-			if FileCheck(Filename) == 1:
+			if FileCheck(Filename) > 0:
 				Checked_filename_list.append(Filename)
-			elif FileCheck(Filename.replace('.dec', '.bytes.dec')) == 1:
+			elif FileCheck(Filename.replace('.dec', '.bytes.dec')) > 0:
 				Checked_filename_list.append(Filename.replace('.dec', '.bytes.dec'))
-			elif FileCheck(Filename.replace('.dec', '.txt.dec')) == 1:
+			elif FileCheck(Filename.replace('.dec', '.txt.dec')) > 0:
 				Checked_filename_list.append(Filename.replace('.dec', '.txt.dec'))
 
 		if Filename.find('.dec.json') ==  len(Filename) - 9: #if ".dec.json" found at the end of filename									
-			if FileCheck(Filename) == 1:
+			if FileCheck(Filename) > 0:
 				Checked_filename_list.append(Filename)				
-			if FileCheck(Filename.replace('.dec.json', '.bytes.dec.json')) == 1:				
+			if FileCheck(Filename.replace('.dec.json', '.bytes.dec.json')) > 0:				
 				Checked_filename_list.append(Filename.replace('.dec.json', '.bytes.dec.json'))				
-			if FileCheck(Filename.replace('.dec.json', '.txt.dec.json')) == 1:
+			if FileCheck(Filename.replace('.dec.json', '.txt.dec.json')) > 0:
 				Checked_filename_list.append(Filename.replace('.dec.json', '.txt.dec.json'))
 		
 		if Filename.find('Replace Guide.txt') !=  -1: #if "Replace Guide.txt" found in filename
-			if FileCheck(Filename) == 1:
+			if FileCheck(Filename) > 0:
 				Checked_filename_list.append(Filename)
-			elif FileCheck(Filename.replace(' ', '_')) == 1:
+			elif FileCheck(Filename.replace(' ', '_')) > 0:
 				Checked_filename_list.append(Filename.replace(' ', '_'))
 	
 		if len(Checked_filename_list) == i + 1:
@@ -328,30 +367,63 @@ def ProgressiveProcessing1(CARD_Indx_filename, filename, start):
 	
 	WriteJSON(desc, f"{filename}" + ".dec.json")
 	
+# A0. Initialize values
+
+script_dir =  str(Path(__file__).parent / '')
+AssetStudio_path = '.\\Tools\\AssetStudioModCLI_aelurum\\AssetStudioModCLI.exe'
+
+min_LD_dirs_file_size = 48 # minimum size of file "!LocalData dirs.txt" in bytes
+CryptoKey_file_size = 4 # fiel size of "!CryptoKey.txt" in bytes.
+
+LD_BaseDirList = []
+LD_LanguageList = []
+
 # A1. Create folders if they doesn't exist
 
 output_dir = MkDir('_Output')
 game_files_dir = MkDir('Game files')
 settings_dir = MkDir('Settings')
+
 print ('The output directory is: "' + output_dir + '"')
 print ('The game files directory is: "' + game_files_dir + '"')
 print ('The settings directory is: "' + settings_dir + '"')
 
-# A2. Get Master Duel \LocalData\????????\ folder
+# A2. Get Master Duel \LocalData\????????\ folders
 
-LD_BaseDir = Get_LD_BaseDir()
-BaseDir = LD_BaseDir + '0000\\'
-print('"' + BaseDir + '" will be used as base directory.')
+LD_BaseDirInfoList = Get_LD_BaseDirInfoList(min_LD_dirs_file_size)
+
+j = -1 #LD_BaseDirList index
+k = -1 #LD_LanguageList index
+for i in range(len(LD_BaseDirInfoList)):
+	if (i % 2 == 0):
+		LD_BaseDirList.append(LD_BaseDirInfoList[i] + '0000\\')
+		j += 1
+		print('"' + LD_BaseDirList[j] + '" will be used as a base directory.')
+	elif (i % 2 != 0):
+		LD_LanguageList.append(LD_BaseDirInfoList[i])
+		k += 1
 
 #A3 Delete all files in output folder
 
-Del_all_files_in_dir(output_dir)
-Del_all_files_in_dir(game_files_dir)
+Del_everything_in_dir(output_dir)
+Del_everything_in_dir(game_files_dir)
 
-# A4. Scan game files
-#Check if AssetStudioModCLI app exists
-AssetStudio_path = '.\\Tools\\AssetStudioModCLI_aelurum\\AssetStudioModCLI.exe'
-script_dir = Path(__file__).parent / ''
+#A4 Create language-specific subfolders
+
+output_dir_list = []
+game_files_dir_list = []
+
+for i in range(1, len(LD_BaseDirInfoList), 2):
+	os.chdir(output_dir)
+	output_dir_list.append(MkDir(LD_BaseDirInfoList[i]))
+
+for i in range(1, len(LD_BaseDirInfoList), 2):
+	os.chdir(game_files_dir)
+	game_files_dir_list.append(MkDir(LD_BaseDirInfoList[i]))
+
+os.chdir(script_dir)
+
+# A5. Check if AssetStudioModCLI app exists
 
 if FileCheck(AssetStudio_path) == 0:
 	print('AssetStudioModCLI app not found in path"' + AssetStudio_path +'".')
@@ -362,172 +434,173 @@ if FileCheck(AssetStudio_path) == 0:
 	input()
 	sys.exit()
 
-print('Scanning game files for CARD-related ones...')
+# A6. Scan game files
 
-Path_list = Sort_by_last_modified_rev(BaseDir)
+for i in range(len(LD_BaseDirList)):	
+	print('Scanning ' + LD_LanguageList[i] + ' game files for CARD-related ones...')	
+	Path_list = Sort_by_last_modified_rev(LD_BaseDirList[i])
+	j = 0
+	while j < len(Path_list) and not All_CARD_files_exist(game_files_dir_list[i]):
+		# Run an executable with arguments, capture output and check return code
+		result = subprocess.run([AssetStudio_path, Path_list[j], "-o", game_files_dir_list[i], "-t", "textAsset", "-g", "None","--filter-by-name", "CARD_Desc", "--filter-by-name", "CARD_Indx", "--filter-by-name", "CARD_Name", "--filter-by-name", "CARD_Prop", "--log-level", "error" ], cwd=script_dir, capture_output=True, text=True, check=True)
+		#print("Output:", result.stdout)
+		#print("Error:", result.stderr)
+		j += 1
+	print('All CARD-related files have been found.')
 
-i = 0
-while i < len(Path_list) and not All_CARD_files_exist(game_files_dir):
-	# Run an executable with arguments, capture output and check return code
-	result = subprocess.run([AssetStudio_path, Path_list[i], "-o", game_files_dir, "-t", "textAsset", "-g", "None","--filter-by-name", "CARD_Desc", "--filter-by-name", "CARD_Indx", "--filter-by-name", "CARD_Name", "--filter-by-name", "CARD_Prop", "--log-level", "error" ], cwd=script_dir, capture_output=True, text=True, check=True)
-	#print("Output:", result.stdout)
-	#print("Error:", result.stderr)
-	i += 1
-print('All CARD-related files have been found.')
+	# B1. Check if CARD_* files exist:
 
-# B1. Check if CARD_* files exist:
+	CARD_filename_list = Check_files([game_files_dir_list[i] + 'CARD_Indx', game_files_dir_list[i] + 'CARD_Name', game_files_dir_list[i] + 'CARD_Desc'])
+	CARD_Indx_filename = CARD_filename_list[0]
+	CARD_Name_filename = CARD_filename_list[1]
+	CARD_Desc_filename = CARD_filename_list[2]
 
-CARD_filename_list = Check_files([game_files_dir + 'CARD_Indx', game_files_dir + 'CARD_Name', game_files_dir + 'CARD_Desc'])
-CARD_Indx_filename = CARD_filename_list[0]
-CARD_Name_filename = CARD_filename_list[1]
-CARD_Desc_filename = CARD_filename_list[2]
+	# B2. Get crypto key
 
-# B2. Get crypto key
+	m_iCryptoKey = GetCryptoKey(CARD_Indx_filename)
 
-m_iCryptoKey = GetCryptoKey(CARD_Indx_filename)
+	# B3. Decrypt card files from section B1
 
-# B3. Decrypt card files from section 1
+	print('Decrypting files...')
 
-print('Decrypting files...')
+	for filename in CARD_filename_list:	
+		data = ReadByteData(filename)
+		data = DecryptData(data, m_iCryptoKey)
+		WriteDecByteData(filename, data)
+		print('Decrypted file "' + filename + '".')
 
-for filename in CARD_filename_list:	
-	data = ReadByteData(filename)
-	data = DecryptData(data, m_iCryptoKey)
-	WriteDecByteData(filename, data)
-	print('Decrypted file "' + filename + '".')
+	# B4. Split CARD_Name + CARD_Desc
 
-# B4. Split CARD_Name + CARD_Desc
+	print('Splitting files...')
 
-print('Splitting files...')
+	if __name__ == '__main__':	
+		ProgressiveProcessing1(CARD_Indx_filename, CARD_Name_filename, 0)	
+		ProgressiveProcessing1(CARD_Indx_filename, CARD_Desc_filename, 4)
 
-if __name__ == '__main__':	
-	ProgressiveProcessing1(CARD_Indx_filename, CARD_Name_filename, 0)	
-	ProgressiveProcessing1(CARD_Indx_filename, CARD_Desc_filename, 4)
+	print('Finished splitting files.')
 
-print('Finished splitting files.')
+	# B5. Check if CARD_Prop_* files exist:
 
-# B5. Check if CARD_Prop_* files exist:
+	filenames_to_check = [game_files_dir_list[i] + 'CARD_Prop', game_files_dir_list[i] + 'CARD_Prop.bytes', game_files_dir_list[i] + 'CARD_Prop.txt']
+	check_counter = -1
+	CARD_Prop_filename = ''
 
-filenames_to_check = [game_files_dir + 'CARD_Prop', game_files_dir + 'CARD_Prop.bytes', game_files_dir + 'CARD_Prop.txt']
-check_counter = -1
-CARD_Prop_filename = ''
+	for j in filenames_to_check:
+		check_counter += 1		
+		if FileCheck(j) > 0 and j.find(game_files_dir_list[i] + 'CARD_Prop') != -1 and CARD_Prop_filename == '':
+			CARD_Prop_filename = j
+		if check_counter == len(filenames_to_check)-1 and CARD_Prop_filename == '':
+			print('CARD_Prop file not found. The file name must be \"CARD_Prop\", \"CARD_Prop.bytes\" or \"CARD_Prop.txt\".\nPress <ENTER> to exit.')
+			input()
+			sys.exit()
 
-for i in filenames_to_check:
-	check_counter += 1		
-	if FileCheck(i) == 1 and i.find(game_files_dir + 'CARD_Prop') != -1 and CARD_Prop_filename == '':
-		CARD_Prop_filename = i
-	if check_counter == len(filenames_to_check)-1 and CARD_Prop_filename == '':
-		print('CARD_Prop file not found. The file name must be \"CARD_Prop\", \"CARD_Prop.bytes\" or \"CARD_Prop.txt\".\nPress <ENTER> to exit.')
-		input()
-		sys.exit()
+	# B6. Decrypt CARD_Prop
 
-# B6. Decrypt CARD_Prop
+	filenames = [CARD_Prop_filename]
 
-filenames = [CARD_Prop_filename]
+	print('Decrypting files...')
 
-print('Decrypting files...')
+	for name in filenames:
+		if FileCheck(name) > 0:
+			DecryptFile(name)
+			print('Decrypted file "' + name + '".')	
+		else:
+			print("Could not decrypt file " + name + " because it does not appear to exist.")
 
-for name in filenames:
-	if FileCheck(name) == 1:
-		DecryptFile(name)
-		print('Decrypted file "' + name + '".')	
-	else:
-		print("Could not decrypt file " + name + " because it does not appear to exist.")
+	# B7. Split CARD_Prop
 
-# B7. Split CARD_Prop
+	def WriteJSON(l: list, json_file_path: str):
+		with open(json_file_path, 'w', encoding='utf8') as f:
+			json.dump(l, f, ensure_ascii=False, indent=4)
 
-def WriteJSON(l: list, json_file_path: str):
-	with open(json_file_path, 'w', encoding='utf8') as f:
-		json.dump(l, f, ensure_ascii=False, indent=4)
+	filenames = [CARD_Prop_filename]
 
-filenames = [CARD_Prop_filename]
-
-# The start of CARD_Prop is 8.
-def ProgressiveProcessing2(filename):
-	with open(CARD_Prop_filename + ".dec", "rb") as f:
-		hex_str_list = ("{:02X}".format(int(c))
-		for c in f.read())  # Define variables to accept file contents
-	
-	str_list = [str(s) for s in hex_str_list]  # Convert hexadecimal to string
-	
-	Card_ID_list = []
-	for i in range(8,len(str_list)-1,8):
-		Card_ID_list.append(''.join([str_list[i+1], str_list[i]]))
-	
-	Card_ID_dec_list = [int(s, 16) for s in Card_ID_list]  # Convert hexadecimal to decimal	
-	WriteJSON(Card_ID_dec_list, f"{filename}" + ".Card_IDs.dec.json")
-
-print('Splitting files...')
-
-if __name__ == '__main__':	
-	ProgressiveProcessing2(filenames[0])
-
-print('Finished splitting files.')
-
-#Check if file CARD Name json file exists:
-filenames_to_check = [game_files_dir + 'CARD_Name.dec.json', game_files_dir + 'CARD_Name.bytes.dec.json', game_files_dir + 'CARD_Name.txt.dec.json']
-check_counter = -1
-CARD_Name_filename = ''
-
-for i in filenames_to_check:
-	check_counter += 1
-	if FileCheck(i) == 1 and i.find('CARD_Name') != -1 and CARD_Name_filename == '':
-		CARD_Name_filename = i
-		print('Using file "' + CARD_Name_filename + '".')
-	if check_counter == len(filenames_to_check)-1 and CARD_Name_filename == '':
-		print('CARD_Name file not found. The file name must be \"CARD_Name.dec.json\", \"CARD_Name.bytes.dec.json\" or \"CARD_Name.txt.dec.json\".\nPress <ENTER> to exit.')
-		input()
-		sys.exit()
-
-#Create list for string replacement instructions:
-R_list=['[\n','','    "','','",\n','\n','"\n]','','\\"',"\""]
-
-#Apply string replacement instructions to CARD_Name JSON file:
-with open(CARD_Name_filename, 'rt', encoding="utf8") as f_CARD_Name:
-	CARD_Name_content = f_CARD_Name.read() #read file content into string variable
-	for i in range(0,len(R_list)-1,2): #use list entries for simple string replacement
-		CARD_Name_content = CARD_Name_content.replace(R_list[i],R_list[i+1])
-	f_CARD_Name.close()
-
-#Write changes to CARD Name JSON text file:
-with open(CARD_Name_filename + '.txt', 'wt', encoding="utf8") as f_CARD_Name:
-	f_CARD_Name.write(CARD_Name_content)
-	f_CARD_Name.close()
-print('File "' + CARD_Name_filename + '.txt" written.')
-
-#Move CARD Name JSON text file to output dir
-MoveFile(CARD_Name_filename + '.txt', output_dir)
-
-#Check if CARD Prop JSON file exists:
-filenames_to_check = [game_files_dir + 'CARD_Prop.Card_IDs.dec.json', game_files_dir + 'CARD_Prop.bytes.Card_IDs.dec.json', game_files_dir + 'CARD_Prop.txt.Card_IDs.dec.json']
-check_counter = -1
-CARD_Prop_filename = ''
-
-for i in filenames_to_check:
-	check_counter += 1
-	if FileCheck(i) == 1 and i.find(game_files_dir + 'CARD_Prop') != -1 and CARD_Prop_filename == '':
-		CARD_Prop_filename = i
-		print('Using file "' + CARD_Prop_filename + '".')
-	if check_counter == len(filenames_to_check)-1 and CARD_Prop_filename == '':
-		print('CARD_Prop file not found. The file name must be \"CARD_Prop.Card_IDs.dec.json\", \"CARD_Prop.bytes.Card_IDs.dec.json\" or \"CARD_Prop.txt.Card_IDs.dec.json\".\nPress <ENTER> to exit.')
-		input()
-		sys.exit()
-
-#Create list for string replacement instructions:
-R_list=['[\n','','    ','',',\n','\n',']','']
+	# The start of CARD_Prop is 8.
+	def ProgressiveProcessing2(filename):
+		with open(CARD_Prop_filename + ".dec", "rb") as f:
+			hex_str_list = ("{:02X}".format(int(c))
+			for c in f.read())  # Define variables to accept file contents
 		
-#Apply string replacement instructions to CARD_Prop JSON file:
-with open(CARD_Prop_filename, 'rt', encoding="utf8") as f_CARD_Prop:
-	CARD_Prop_content = f_CARD_Prop.read() #read file content into string variable
-	for i in range(0,len(R_list)-1,2): #use list entries for simple string replacement
-		CARD_Prop_content = CARD_Prop_content.replace(R_list[i],R_list[i+1])
-	f_CARD_Prop.close()
+		str_list = [str(s) for s in hex_str_list]  # Convert hexadecimal to string
+		
+		Card_ID_list = []
+		for j in range(8,len(str_list)-1,8):
+			Card_ID_list.append(''.join([str_list[j+1], str_list[j]]))
+		
+		Card_ID_dec_list = [int(s, 16) for s in Card_ID_list]  # Convert hexadecimal to decimal	
+		WriteJSON(Card_ID_dec_list, f"{filename}" + ".Card_IDs.dec.json")
 
-#Write changes to CARD_Prop JSON text file:
-with open(CARD_Prop_filename + '.txt', 'wt', encoding="utf8") as f_CARD_Prop:
-	f_CARD_Prop.write(CARD_Prop_content)
-	f_CARD_Prop.close()
-print('File "' + CARD_Prop_filename + '.txt" written.')
+	print('Splitting files...')
 
-#Move CARD_Prop JSON text file to output dir
-MoveFile(CARD_Prop_filename + '.txt', output_dir)
+	if __name__ == '__main__':	
+		ProgressiveProcessing2(filenames[0])
+
+	print('Finished splitting files.')
+
+	#Check if file CARD Name json file exists:
+	filenames_to_check = [game_files_dir_list[i] + 'CARD_Name.dec.json', game_files_dir_list[i] + 'CARD_Name.bytes.dec.json', game_files_dir_list[i] + 'CARD_Name.txt.dec.json']
+	check_counter = -1
+	CARD_Name_filename = ''
+
+	for j in filenames_to_check:
+		check_counter += 1
+		if FileCheck(j) > 0 and j.find('CARD_Name') != -1 and CARD_Name_filename == '':
+			CARD_Name_filename = j
+			print('Using file "' + CARD_Name_filename + '".')
+		if check_counter == len(filenames_to_check)-1 and CARD_Name_filename == '':
+			print('CARD_Name file not found. The file name must be \"CARD_Name.dec.json\", \"CARD_Name.bytes.dec.json\" or \"CARD_Name.txt.dec.json\".\nPress <ENTER> to exit.')
+			input()
+			sys.exit()
+
+	#Create list for string replacement instructions:
+	R_list=['[\n','','    "','','",\n','\n','"\n]','','\\"',"\""]
+
+	#Apply string replacement instructions to CARD_Name JSON file:
+	with open(CARD_Name_filename, 'rt', encoding="utf8") as f_CARD_Name:
+		CARD_Name_content = f_CARD_Name.read() #read file content into string variable
+		for j in range(0,len(R_list)-1,2): #use list entries for simple string replacement
+			CARD_Name_content = CARD_Name_content.replace(R_list[j],R_list[j+1])
+		f_CARD_Name.close()
+
+	#Write changes to CARD Name JSON text file:
+	with open(CARD_Name_filename + '.txt', 'wt', encoding="utf8") as f_CARD_Name:
+		f_CARD_Name.write(CARD_Name_content)
+		f_CARD_Name.close()
+	print('File "' + CARD_Name_filename + '.txt" written.')
+
+	#Move CARD Name JSON text file to output dir
+	MoveFile(CARD_Name_filename + '.txt', output_dir_list[i])
+
+	#Check if CARD Prop JSON file exists:
+	filenames_to_check = [game_files_dir_list[i] + 'CARD_Prop.Card_IDs.dec.json', game_files_dir_list[i] + 'CARD_Prop.bytes.Card_IDs.dec.json', game_files_dir_list[i] + 'CARD_Prop.txt.Card_IDs.dec.json']
+	check_counter = -1
+	CARD_Prop_filename = ''
+
+	for j in filenames_to_check:
+		check_counter += 1
+		if FileCheck(j) > 0 and j.find(game_files_dir_list[i] + 'CARD_Prop') != -1 and CARD_Prop_filename == '':
+			CARD_Prop_filename = j
+			print('Using file "' + CARD_Prop_filename + '".')
+		if check_counter == len(filenames_to_check)-1 and CARD_Prop_filename == '':
+			print('CARD_Prop file not found. The file name must be \"CARD_Prop.Card_IDs.dec.json\", \"CARD_Prop.bytes.Card_IDs.dec.json\" or \"CARD_Prop.txt.Card_IDs.dec.json\".\nPress <ENTER> to exit.')
+			input()
+			sys.exit()
+
+	#Create list for string replacement instructions:
+	R_list=['[\n','','    ','',',\n','\n',']','']
+			
+	#Apply string replacement instructions to CARD_Prop JSON file:
+	with open(CARD_Prop_filename, 'rt', encoding="utf8") as f_CARD_Prop:
+		CARD_Prop_content = f_CARD_Prop.read() #read file content into string variable
+		for j in range(0,len(R_list)-1,2): #use list entries for simple string replacement
+			CARD_Prop_content = CARD_Prop_content.replace(R_list[j],R_list[j+1])
+		f_CARD_Prop.close()
+
+	#Write changes to CARD_Prop JSON text file:
+	with open(CARD_Prop_filename + '.txt', 'wt', encoding="utf8") as f_CARD_Prop:
+		f_CARD_Prop.write(CARD_Prop_content)
+		f_CARD_Prop.close()
+	print('File "' + CARD_Prop_filename + '.txt" written.')
+
+	#Move CARD_Prop JSON text file to output dir
+	MoveFile(CARD_Prop_filename + '.txt', output_dir_list[i])
