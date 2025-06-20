@@ -270,7 +270,8 @@ def Check_files(Filename_list):
 	for i in range(len(Filename_list)):
 		Filename = Filename_list[i]
 		
-		if Filename.find('.') == -1: #if no dot found in filename			
+		Filename_length = len(Filename)
+		if Filename.find('.',Filename_length - 6,Filename_length) == -1: #if no dot found in filename
 			if FileCheck(Filename) > 0:
 				Checked_filename_list.append(Filename)
 			elif FileCheck(Filename + '.bytes') > 0				:
